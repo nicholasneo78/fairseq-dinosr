@@ -639,6 +639,12 @@ class OptimizationConfig(FairseqDataclass):
 
 @dataclass
 class CheckpointConfig(FairseqDataclass):
+
+    # additional parameter added
+    root_model_dir: str = field(
+        default="/models/dinosr", metadata={"help": "root path to save the ckpt, and the tb log dir"}
+    )
+
     save_dir: str = field(
         default="checkpoints", metadata={"help": "path to save checkpoints"}
     )
