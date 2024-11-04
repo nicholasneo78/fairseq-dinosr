@@ -4,26 +4,35 @@ common:
   fp16: true
   log_format: json
   log_interval: 200
+  tensorboard_logdir: ${checkpoint.root_model_dir}/tb
+  log_file: ${checkpoint.root_model_dir}/log.txt
 
 checkpoint:
+  save_interval: 5
+  save_interval_updates: 4000
+  keep_interval_updates: 1
   no_epoch_checkpoints: true
   best_checkpoint_metric: wer
+  root_model_dir: ???
+  save_dir: ${checkpoint.root_model_dir}/ckpt
 
 task:
   _name: audio_finetuning
   data: ???
+  max_sample_size: 320000
+  min_sample_size: 32000
   normalize: false
   labels: ltr
 
 dataset:
   num_workers: 6
-  max_tokens: 3200000
+  max_tokens: 6400000 # 3200000
   skip_invalid_size_inputs_valid_test: true
-  valid_subset: dev_other
+  valid_subset: dev
 
 distributed_training:
   ddp_backend: legacy_ddp
-  distributed_world_size: 2
+  distributed_world_size: 1 # 2
 
 criterion:
   _name: ctc
