@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  local:
+    build:
+      context: ../
+      dockerfile: build/dockerfile
+    container_name: fairseq_dinosr
+    stdin_open: true
+    tty: true
+    image: fairseq_dinosr:v0.0.2
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    command: bash -c "./dinosr.sh && tail -F anything"
+    volumes:
+      # - /home/nicholas/code/fairseq-dinosr/:/fairseq_dinosr
+      # - /home/nicholas/datasets/:/datasets
+      # - /home/nicholas/models/:/models
+      - /home/dh/code/fairseq-dinosr/:/fairseq_dinosr
+      - /home/dh/datasets/:/datasets
+      - /home/dh/models/:/models
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    shm_size: 32gb
+  
+  tensorboard:
+    stdin_open: true
+    tty: true
+    image: fairseq_dinosr:v0.0.2
+    ports:
+      - 6006:6006
+    volumes:
+      # - /home/nicholas/models/dinosr:/logs
+      - /home/dh/models/dinosr:/logs
+    command: tensorboard --logdir /logs --host 0.0.0.0 --port 6006

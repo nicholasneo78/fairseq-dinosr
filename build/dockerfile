@@ -1,0 +1,33 @@
+FROM pytorch/pytorch:2.1.1-cuda12.1-cudnn8-runtime
+
+ENV TZ=Asia/Singapore
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Install libsndfile1 (linux soundfile package)
+RUN apt-get update && apt-get install -y gcc build-essential libsndfile1 git sox wget ffmpeg python3-pip \
+&& rm -rf /var/lib/apt/lists/*
+
+# Keeps Python from generating .pyc files in the container
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# Turns off buffering for easier container logging
+ENV PYTHONUNBUFFERED=1
+
+# Install pip requirements
+RUN rm -rf $(python -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")/ruamel*
+ADD build/requirements.txt .
+# RUN pip install --upgrade pip
+RUN python3 -m pip install --no-cache-dir -r requirements.txt
+
+# install torchaudio
+RUN pip install --no-cache-dir https://download.pytorch.org/whl/cu121/torchaudio-2.1.1%2Bcu121-cp310-cp310-linux_x86_64.whl#sha256=eff8260e02f88a694a964b2bb6f637a6af3107787d907eae7e5801816033bfa7
+
+# install all fairseq requirements
+ADD . .
+# ADD fairseq/version.txt fairseq/version.txt
+# ADD README.md .
+RUN pip install --editable .
+
+#docker container starts with bash
+WORKDIR /fairseq_dinosr
+RUN ["bash"]
