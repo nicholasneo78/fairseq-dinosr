@@ -1,4 +1,4 @@
-ROOT_MODEL_DIR=/models/dinosr/librispeech_960_bs_10m
+ROOT_MODEL_DIR=/models/dinosr/librispeech_960_bs_10m_steps_2.4m
 
 mkdir -p $ROOT_MODEL_DIR
 python3 fairseq_cli/hydra_train.py -m \

@@ -44,7 +44,7 @@ criterion:
     - codebook_decay
 
 optimization:
-  max_update: 400000
+  max_update: 2400000 # 400000
   lr: [2.0277e-04] # [0.0005]
 
 optimizer:
