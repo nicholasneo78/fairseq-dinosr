@@ -5,12 +5,12 @@ common:
   log_format: json
   log_interval: 200
   tensorboard_logdir: ${checkpoint.root_model_dir}/tb
+  # added params
   log_file: ${checkpoint.root_model_dir}/log.txt
 
 checkpoint:
-  # save_interval: 5
-  save_interval_updates: 80000 # 25000
-  # keep_interval_updates: 1
+  save_interval_updates: 400 # 25000
+  # keep_interval_updates: -1 # put -ve so that previously saved model will not be overwritten
   no_epoch_checkpoints: true
   load_checkpoint_on_all_dp_ranks: true
   root_model_dir: ???
@@ -25,7 +25,7 @@ task:
 
 dataset:
   num_workers: 6
-  max_tokens: 10000000 # 3800000
+  max_tokens: 500000 # 3800000
   skip_invalid_size_inputs_valid_test: true
   validate_interval: 5
   required_batch_size_multiple: 1
@@ -44,14 +44,14 @@ criterion:
     - codebook_decay
 
 optimization:
-  max_update: 2400000 # 400000
-  lr: [2.0277e-04] # [0.0005]
+  max_update: 3600
+  lr: [0.0005]
 
 optimizer:
   _name: adam
-  adam_betas: (0.98355, 0.99671) # (0.9,0.98)
-  adam_eps: 2.4658e-06 # 1e-06
-  weight_decay: 4.0556e-03 # 0.01
+  adam_betas: (0.9,0.98)
+  adam_eps: 1e-06
+  weight_decay: 0.01
 
 lr_scheduler:
   _name: tri_stage
@@ -70,7 +70,7 @@ model:
   codebook_size: 256
   average_top_k_layers: 8
   normal_init_codebook: false
-  codebook_init_decay: 0.98355 # 0.9
+  codebook_init_decay: 0.9
   instance_norm_target_layer: true
 
   mask_prob: 0.8
@@ -79,8 +79,8 @@ model:
   pos_conv_depth: 5
   conv_pos: 95
 
-  ema_decay: 0.9995943304 # 0.999
-  ema_end_decay: 0.9999594439 # 0.9999
+  ema_decay: 0.999
+  ema_end_decay: 0.9999
   ema_anneal_end_step: 30000
   ema_transformer_only: true
   ema_layers_only: true
