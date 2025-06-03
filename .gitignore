@@ -138,3 +138,4 @@ wandb/
 nohup.out
 multirun
 outputs
+.qodo

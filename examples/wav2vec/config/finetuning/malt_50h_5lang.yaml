@@ -27,21 +27,21 @@ task:
   labels: ltr
 
 dataset:
-  num_workers: 6
-  max_tokens: 6400000 # 3200000
+  num_workers: 4 # 6
+  max_tokens: 1600000 # 6400000 # 3200000
   skip_invalid_size_inputs_valid_test: true
   valid_subset: dev
 
 distributed_training:
   ddp_backend: legacy_ddp
-  distributed_world_size: 1 # 2
+  distributed_world_size: 1
 
 criterion:
   _name: ctc
   zero_infinity: true
 
 optimization:
-  max_update: 80000
+  max_update: 200000 # 80000
   lr: [0.00003]
   sentence_avg: true
   update_freq: [4]

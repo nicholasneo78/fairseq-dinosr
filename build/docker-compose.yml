@@ -16,14 +16,15 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
-    command: bash -c "./dinosr.sh && tail -F anything"
+    # command: bash -c "./execute_docker_finetuning.sh && tail -F anything"
     volumes:
-      # - /home/nicholas/code/fairseq-dinosr/:/fairseq_dinosr
-      # - /home/nicholas/datasets/:/datasets
-      # - /home/nicholas/models/:/models
-      - /home/dh/code/fairseq-dinosr/:/fairseq_dinosr
-      - /home/dh/datasets/:/datasets
-      - /home/dh/models/:/models
+      - $HOME/code/fairseq-dinosr/:/fairseq_dinosr
+      - $HOME/datasets/:/datasets
+      - $HOME/models/:/models
+      - nas:/nas
+      # - /home/dh/code/fairseq-dinosr/:/fairseq_dinosr
+      # - /home/dh/datasets/:/datasets
+      # - /home/dh/models/:/models
     ulimits:
       memlock: -1
       stack: 67108864
@@ -36,7 +37,15 @@ services:
     ports:
       - 6006:6006
     volumes:
-      # - /home/nicholas/models/dinosr:/logs
-      - /home/dh/models/dinosr:/logs
+      - $HOME/models/dinosr:/logs
+      # - /home/dh/models/dinosr:/logs
     command: tensorboard --logdir /logs --host 0.0.0.0 --port 6006
+
+# Temp mount to nas
+volumes: 
+  nas: 
+    driver_opts:
+      type: "nfs"
+      o: "addr=192.168.100.200,nfsvers=4"
+      device: ":/volume1/c3_generic"
 

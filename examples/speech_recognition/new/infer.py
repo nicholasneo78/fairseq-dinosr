@@ -4,6 +4,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from examples.speech_recognition.new.decoders.decoder_config import (
+    DecoderConfig,
+    FlashlightDecoderConfig,
+)
+from examples.speech_recognition.new.decoders.decoder import Decoder
+
+
 import ast
 import hashlib
 import logging
@@ -17,11 +24,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import editdistance
 import torch
 import torch.distributed as dist
-from examples.speech_recognition.new.decoders.decoder_config import (
-    DecoderConfig,
-    FlashlightDecoderConfig,
-)
-from examples.speech_recognition.new.decoders.decoder import Decoder
+
 from fairseq import checkpoint_utils, distributed_utils, progress_bar, tasks, utils
 from fairseq.data.data_utils import post_process
 from fairseq.dataclass.configs import (
@@ -58,6 +61,10 @@ class DecodingConfig(DecoderConfig, FlashlightDecoderConfig):
         metadata={
             "help": "If set, write hypothesis and reference sentences into this directory"
         },
+    )
+    prediction_log_path: Optional[str] = field(
+        default=None,
+        metadata={"help": "Path to write JSON lines of prediction logs."}
     )
 
 
@@ -129,6 +136,8 @@ class InferenceProcessor:
             self.hypo_units_file = self.get_res_file("hypo.units")
             self.ref_words_file = self.get_res_file("ref.word")
             self.ref_units_file = self.get_res_file("ref.units")
+        if self.cfg.decoding.prediction_log_path:
+            self.prediction_log_file = open(self.cfg.decoding.prediction_log_path, "w")
         return self
 
     def __exit__(self, *exc) -> bool:
@@ -137,6 +146,8 @@ class InferenceProcessor:
             self.hypo_units_file.close()
             self.ref_words_file.close()
             self.ref_units_file.close()
+        if self.cfg.decoding.prediction_log_path:
+            self.prediction_log_file.close()
         return False
 
     def __iter__(self) -> Any:
@@ -286,10 +297,14 @@ class InferenceProcessor:
         tgt_words = post_process(tgt_pieces, self.cfg.common_eval.post_process)
 
         if self.cfg.decoding.results_path is not None:
-            print(f"{hyp_pieces} ({speaker}-{sid})", file=self.hypo_units_file)
-            print(f"{hyp_words} ({speaker}-{sid})", file=self.hypo_words_file)
-            print(f"{tgt_pieces} ({speaker}-{sid})", file=self.ref_units_file)
-            print(f"{tgt_words} ({speaker}-{sid})", file=self.ref_words_file)
+            # print(f"{hyp_pieces} ({speaker}-{sid})", file=self.hypo_units_file)
+            # print(f"{hyp_words} ({speaker}-{sid})", file=self.hypo_words_file)
+            # print(f"{tgt_pieces} ({speaker}-{sid})", file=self.ref_units_file)
+            # print(f"{tgt_words} ({speaker}-{sid})", file=self.ref_words_file)
+            print(f"{hyp_pieces}", file=self.hypo_units_file)
+            print(f"{hyp_words}", file=self.hypo_words_file)
+            print(f"{tgt_pieces}", file=self.ref_units_file)
+            print(f"{tgt_words}", file=self.ref_words_file)
 
         if not self.cfg.common_eval.quiet:
             logger.info(f"HYPO: {hyp_words}")
@@ -298,7 +313,24 @@ class InferenceProcessor:
 
         hyp_words, tgt_words = hyp_words.split(), tgt_words.split()
 
-        return editdistance.eval(hyp_words, tgt_words), len(tgt_words)
+        errors = editdistance.eval(hyp_words, tgt_words)
+
+        # Build JSON log entry
+        log_entry = {
+            "id": int(sample["id"][batch_id]),
+            # "gold_label": tgt_words,
+            # "predicted_label": hyp_words,
+            "hypo_text": " ".join(hyp_words),
+            "ref_text": " ".join(tgt_words),
+            "confidence_scores": (
+                hypo["positional_scores"].tolist()
+                if "positional_scores" in hypo
+                else None
+            ),
+        }
+
+        # return editdistance.eval(hyp_words, tgt_words), len(tgt_words)
+        return errors, len(tgt_words), log_entry
 
     def process_sample(self, sample: Dict[str, Any]) -> None:
         self.gen_timer.start()
@@ -312,7 +344,7 @@ class InferenceProcessor:
         self.wps_meter.update(num_generated_tokens)
 
         for batch_id, sample_id in enumerate(sample["id"].tolist()):
-            errs, length = self.process_sentence(
+            errs, length, log_entry = self.process_sentence(
                 sample=sample,
                 sid=sample_id,
                 batch_id=batch_id,
@@ -320,6 +352,10 @@ class InferenceProcessor:
             )
             self.total_errors += errs
             self.total_length += length
+
+            if self.cfg.decoding.prediction_log_path:
+                import json
+                self.prediction_log_file.write(json.dumps(log_entry,indent=4) + "\n")
 
         self.log({"wps": round(self.wps_meter.avg)})
         if "nsentences" in sample:
