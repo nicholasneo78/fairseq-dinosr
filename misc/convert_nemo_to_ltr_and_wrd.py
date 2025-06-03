@@ -47,6 +47,8 @@ class ConvertNemoToLtrAndWrd:
         self.input_manifest_dir = input_manifest_dir
         self.output_ltr_dir = output_ltr_dir
         self.output_wrd_dir = output_wrd_dir
+        self.min_len = 2
+        self.max_len = 20
 
 
     def convert_sentence_to_char(self, text: str) -> str:
@@ -63,6 +65,8 @@ class ConvertNemoToLtrAndWrd:
         items = load_manifest_nemo(input_manifest_path=self.input_manifest_dir)
 
         for item in tqdm(items):
+            # if item['duration'] < self.min_len or item['duration'] > self.max_len:
+            #     continue
             cleaned_text = TextPostProcessingManager(label=item['language']).process_data(text=item['text'])
             char_text = self.convert_sentence_to_char(text=cleaned_text)
             wrd_list.append(cleaned_text)

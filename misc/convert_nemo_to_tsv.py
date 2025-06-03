@@ -48,6 +48,8 @@ class ConvertNemoToTSV:
         self.output_manifest_dir = output_manifest_dir
         self.output_root_dir = output_root_dir
         self.sampling_rate = sampling_rate
+        self.min_len = 2
+        self.max_len = 20
 
     def convert(self) -> None:
 
@@ -56,6 +58,8 @@ class ConvertNemoToTSV:
         items = load_manifest_nemo(input_manifest_path=self.input_manifest_dir)
 
         for item in tqdm(items):
+            # if item['duration'] < self.min_len or item['duration'] > self.max_len:
+            #     continue
             temp = {
                 "audio_filepath": item['audio_filepath'],
                 "num_samples": int(item['duration'] * self.sampling_rate)
